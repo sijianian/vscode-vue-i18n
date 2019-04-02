@@ -1,12 +1,13 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import i18nFiles from './i18nFiles'
-import Common from './Common'
 
 export enum SAVE_TYPE {
   $t,
   i18n
 }
+
+let prevKey = ''
 
 const transAndRefactor = async ({
   filePath,
@@ -19,23 +20,15 @@ const transAndRefactor = async ({
   type: SAVE_TYPE;
   range: vscode.Range;
 }) => {
-  let relativeName: any = path
-    .relative(
-      vscode.workspace.rootPath,
-      vscode.window.activeTextEditor.document.fileName
-    )
-    .split(path.sep)
-    .splice(1)
-    .join(path.sep)
-  relativeName = path.parse(relativeName)
-
-  const defaultKey = relativeName.dir.split(path.sep).filter(key => key)
-  defaultKey.push(relativeName.name)
+  let defaultKey = prevKey
+  const valueSelection: undefined | [number, number] = defaultKey
+    ? [defaultKey.lastIndexOf('.') + 1, defaultKey.length]
+    : undefined
 
   let key = await vscode.window.showInputBox({
     prompt: `请输入要保存的路径 (例如:home.document.title)`,
-    valueSelection: undefined,
-    value: `${defaultKey.join('_')}.${Common.getUid()}`
+    valueSelection,
+    value: defaultKey
   })
 
   if (!key) {
@@ -94,6 +87,9 @@ const transAndRefactor = async ({
   // 提示翻译
   const transEn = transData.find(item => item.lng === 'en')
   transEn && vscode.window.showInformationMessage(`翻译结果: ${transEn.data}`)
+
+  // 记住上一次的key
+  prevKey = key
 }
 
 export default transAndRefactor
